@@ -19,3 +19,9 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+body {
+  background-color: #121212;
+  color: white;
+  font-family: "Poppins", sans-serif;
+}
