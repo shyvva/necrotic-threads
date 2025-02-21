@@ -1,11 +1,13 @@
 import Stripe from "stripe";
 
+// Użyj tajnego klucza API
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function POST(req) {
   try {
     const { cart, email } = await req.json();
 
+    // Mapowanie przedmiotów na sesję Stripe
     const line_items = cart.map((item) => ({
       price_data: {
         currency: "usd",
@@ -15,6 +17,7 @@ export async function POST(req) {
       quantity: 1,
     }));
 
+    // Tworzenie sesji Stripe
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items,
@@ -25,19 +28,11 @@ export async function POST(req) {
     });
 
     // Po płatności wysyłamy potwierdzenie
-    try {
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, orderId: session.id, items: cart }),
-      });
-      if (!emailResponse.ok) {
-        throw new Error('Failed to send email');
-      }
-      console.log('Email sent successfully');
-    } catch (error) {
-      console.error('Error sending email:', error.message);
-    }
+    await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, orderId: session.id, items: cart }),
+    });
 
     return new Response(JSON.stringify({ url: session.url }), { status: 200 });
   } catch (error) {
