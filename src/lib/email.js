@@ -1,17 +1,18 @@
 import { Resend } from "resend";
 
+// Inicjalizacja Resend z kluczem API
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function sendEmail(to, subject, message) {
   try {
     await resend.emails.send({
-      from: "orders@necroticthreads.com", // Zweryfikowane w Resend
+      from: "orders@necroticthreads.com",  // Musi być zweryfikowane w Resend
       to,
       subject,
-      text: message,
+      text: message,  // Treść wiadomości
     });
-    console.log(`📧 Email sent to: ${to} | Subject: ${subject}`);
+    console.log("E-mail wysłany do:", to);
   } catch (error) {
-    console.error("❌ Email sending error:", error);
+    console.error("Błąd wysyłania e-maila:", error);
   }
 }
