@@ -1,24 +1,27 @@
-"use client"; // Musi być na samej górze!
+"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const [cartCount, setCartCount] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Funkcja pobiera aktualną liczbę produktów w koszyku
+    setMounted(true); // Unikamy błędów hydracji
+
     const updateCartCount = () => {
       const cartItems = JSON.parse(localStorage.getItem("cart")) || [];
       setCartCount(cartItems.length);
     };
 
-    updateCartCount(); // Uruchamiamy funkcję po załadowaniu strony
+    updateCartCount();
 
-    // Nasłuchujemy zmian w `localStorage`
     window.addEventListener("storage", updateCartCount);
     return () => window.removeEventListener("storage", updateCartCount);
   }, []);
+
+  if (!mounted) return null; // Zapobiegamy renderowaniu na serwerze
 
   return (
     <nav className="flex justify-between p-5 bg-gray-900 text-white">
