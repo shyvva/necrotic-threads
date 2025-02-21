@@ -25,11 +25,19 @@ export async function POST(req) {
     });
 
     // Po płatności wysyłamy potwierdzenie
-    fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/email`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, orderId: session.id, items: cart }),
-    });
+    try {
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, orderId: session.id, items: cart }),
+      });
+      if (!emailResponse.ok) {
+        throw new Error('Failed to send email');
+      }
+      console.log('Email sent successfully');
+    } catch (error) {
+      console.error('Error sending email:', error.message);
+    }
 
     return new Response(JSON.stringify({ url: session.url }), { status: 200 });
   } catch (error) {
