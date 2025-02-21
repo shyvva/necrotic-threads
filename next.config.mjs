@@ -1,9 +1,8 @@
-// next.config.js
-const path = require('path');
+import path from 'path';
 
-module.exports = {
+export default {
   webpack(config) {
-    config.resolve.alias['@'] = path.join(__dirname, 'src');
+    config.resolve.alias['@'] = path.resolve(__dirname, 'src');
     return config;
   },
 }
