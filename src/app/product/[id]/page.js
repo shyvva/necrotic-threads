@@ -1,32 +1,34 @@
-"use client";
+"use client"; // Dodaj to na samej górze!
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+// Przykładowe produkty
 const products = [
-  { id: 1, name: "Dark Soul T-Shirt", price: "$1", description: "Mroczna koszulka z unikalnym wzorem." },
-  { id: 2, name: "Necro Hoodie", price: "$1", description: "Czarna bluza z gotyckim motywem." },
+  { id: 1, name: "Dark Soul T-Shirt", price: "$25", description: "Mroczna koszulka z unikalnym wzorem." },
+  { id: 2, name: "Necro Hoodie", price: "$45", description: "Czarna bluza z gotyckim motywem." },
 ];
 
 export default function Product() {
-  const params = useParams();
-  const product = products.find((p) => p.id == params.id);
+  const params = useParams(); // Pobieramy ID produktu z URL
+  const product = products.find((p) => p.id == params.id); // Znajdujemy produkt po ID w URL
   const [cart, setCart] = useState([]);
 
   useEffect(() => {
+    // Ładujemy produkty z lokalnego storage
     const cartItems = JSON.parse(localStorage.getItem("cart")) || [];
     setCart(cartItems);
   }, []);
 
   const addToCart = () => {
-    let cartItems = [...cart, product];
-    localStorage.setItem("cart", JSON.stringify(cartItems));
-    setCart(cartItems);
+    let cartItems = [...cart, product]; // Dodajemy produkt do koszyka
+    localStorage.setItem("cart", JSON.stringify(cartItems)); // Zapisujemy koszyk do localStorage
+    setCart(cartItems); // Aktualizujemy stan
     window.dispatchEvent(new Event("storage")); // Aktualizacja Navbar
     alert("Added to cart!");
   };
 
-  if (!product) return <p>Product not found.</p>;
+  if (!product) return <p>Product not found.</p>; // Obsługa braku produktu
 
   return (
     <div className="p-10">

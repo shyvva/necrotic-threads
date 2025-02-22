@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import mongoose from "mongoose";
+import stripe from "@/lib/stripe"; // Importujemy Stripe
+import sendEmail from "@/api/sendemail"; // Poprawiony import do katalogu src/api/sendemail
 
 export async function POST(req) {
   try {
@@ -30,6 +32,26 @@ export async function POST(req) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Tworzymy sesję Stripe
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: product },
+            unit_amount: price * 100, // 1$ = 100 centów
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/cart`,
+      customer_email: email, // Przechwycenie emaila klienta
+    });
+
+    // Tworzymy zamówienie w bazie danych
     const db = await connectToDatabase();
     const newOrder = await db.collection("orders").insertOne({
       name,
@@ -49,97 +71,16 @@ export async function POST(req) {
       items: [{ name: product, price: `$${price}` }],
     };
 
-    const emailResponse = await fetch("http://localhost:3000/api/send-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(emailPayload),
-    });
+    const emailResponse = await sendEmail(emailPayload); // Wywołujemy funkcję do wysyłania e-maila
 
-    if (!emailResponse.ok) {
-      console.error("❌ Error sending confirmation email:", await emailResponse.json());
+    if (!emailResponse) {
+      console.error("❌ Error sending confirmation email");
     }
 
-    return NextResponse.json({ success: true, orderId: newOrder.insertedId });
+    // Zwracamy URL sesji Stripe do frontend
+    return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (error) {
     console.error("❌ Unexpected Error:", error);
     return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }
-
-export async function PUT(req) {
-    try {
-      console.log("🔍 Checking request...");
-  
-      // Sprawdzamy nagłówki
-      const contentType = req.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) {
-        console.error("❌ Missing or incorrect Content-Type header");
-        return NextResponse.json({ error: "Content-Type must be application/json" }, { status: 400 });
-      }
-  
-      // Pobieramy JSON zamiast text()
-      let data;
-      try {
-        data = await req.json();
-      } catch (err) {
-        console.error("❌ Error parsing JSON:", err);
-        return NextResponse.json({ error: "Invalid JSON format" }, { status: 400 });
-      }
-  
-      console.log("📩 Parsed JSON:", data);
-  
-      const { orderId, status } = data;
-  
-      // Walidacja, czy oba parametry zostały przesłane
-      if (!orderId || !status) {
-        console.error("❌ Missing required fields: orderId or status");
-        return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-      }
-  
-      // Walidacja, czy orderId jest prawidłowym ObjectId
-      if (!mongoose.Types.ObjectId.isValid(orderId)) {
-        return NextResponse.json({ error: "Invalid orderId format" }, { status: 400 });
-      }
-  
-      const db = await connectToDatabase();
-      const objectId = new mongoose.Types.ObjectId(orderId);
-      const order = await db.collection("orders").findOne({ _id: objectId });
-  
-      if (!order) {
-        console.error(`❌ Order with ID ${orderId} not found`);
-        return NextResponse.json({ error: "Order not found" }, { status: 404 });
-      }
-  
-      // Aktualizujemy status zamówienia
-      await db.collection("orders").updateOne(
-        { _id: objectId },
-        { $set: { status } }
-      );
-  
-      console.log(`✅ Order ${orderId} status updated to: ${status}`);
-  
-      // Wysyłamy e-mail o zmianie statusu
-      const emailPayload = {
-        email: order.email,
-        orderId,
-        status,
-        items: [{ name: order.product, price: `$${order.price}` }],
-      };
-  
-      const emailResponse = await fetch("http://localhost:3000/api/send-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(emailPayload),
-      });
-  
-      if (!emailResponse.ok) {
-        console.error("❌ Error sending status update email:", await emailResponse.json());
-      }
-  
-      return NextResponse.json({ success: true });
-    } catch (error) {
-      console.error("❌ Error updating order status:", error);
-      return NextResponse.json({ error: "Server Error" }, { status: 500 });
-    }
-  }
-  

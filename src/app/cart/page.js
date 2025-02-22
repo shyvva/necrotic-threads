@@ -63,7 +63,6 @@ export default function Cart() {
             </div>
           ))}
 
-          {/* Pole na e-mail użytkownika */}
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-300">Email Address</label>
             <input 
@@ -75,7 +74,6 @@ export default function Cart() {
             />
           </div>
 
-          {/* Przycisk do płatności */}
           <button 
             onClick={checkout} 
             className="mt-4 w-full px-5 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"

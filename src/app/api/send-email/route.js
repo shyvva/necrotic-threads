@@ -1,35 +1,10 @@
-import { Resend } from 'resend';
+import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY); // Użycie klucza API Resend
 
 // Funkcja wysyłająca e-mail
-async function sendEmail(to, subject, message) {
+async function sendEmail({ email, orderId, status, items }) {
   try {
-    const response = await resend.send({
-      from: 'orders@necroticthreads.com',  // Twój e-mail nadawcy
-      to: to,
-      subject: subject,
-      text: message,
-    });
-    return response;
-  } catch (error) {
-    console.error("Error sending email:", error);
-    throw new Error("Failed to send email");
-  }
-}
-
-// Główna funkcja obsługująca żądanie API
-export async function POST(req) {
-  try {
-    const { email, orderId, status, items } = await req.json();
-
-    if (!email || !orderId || !status || !items || items.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Invalid request data" }),
-        { status: 400 }
-      );
-    }
-
     let subject = "";
     let message = "";
     const formattedItems = items.map((item) => `- ${item.name} ($${item.price})`).join("\n");
@@ -83,24 +58,22 @@ If this was a mistake, please contact our support at support@necroticthreads.com
         break;
 
       default:
-        return new Response(
-          JSON.stringify({ error: "Invalid status type" }),
-          { status: 400 }
-        );
+        throw new Error("Invalid status type");
     }
 
     // Wysyłanie e-maila
-    await sendEmail(email, subject, message);
+    await resend.send({
+      from: "orders@necroticthreads.com",  // Twój e-mail nadawcy
+      to: email,
+      subject,
+      text: message,
+    });
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200 }
-    );
+    return { success: true };
   } catch (error) {
-    console.error("❌ Email processing error:", error);
-    return new Response(
-      JSON.stringify({ error: "Server error" }),
-      { status: 500 }
-    );
+    console.error("Error sending email:", error);
+    throw new Error("Failed to send email");
   }
 }
+
+export default sendEmail;
