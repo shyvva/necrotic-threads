@@ -1,13 +1,21 @@
-import { Resend } from "resend";
+import { NextResponse } from "next/server";
+import sendEmail from "@/lib/email";  // Importujemy funkcję wysyłania e-maili
 
-const resend = new Resend(process.env.RESEND_API_KEY); // Użycie klucza API Resend
-
-// Funkcja wysyłająca e-mail
-async function sendEmail({ email, orderId, status, items }) {
+export async function POST(req) {
   try {
+    // Pobieramy dane z żądania
+    const { email, orderId, status, items } = await req.json();
+
+    if (!email || !orderId || !status || !items || items.length === 0) {
+      return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
+    }
+
+    // Formatujemy przedmioty do wysyłania w wiadomości
+    const formattedItems = items.map(item => `- ${item.name} ($${item.price})`).join("\n");
+
+    // Przygotowanie tematu i treści wiadomości na podstawie statusu
     let subject = "";
     let message = "";
-    const formattedItems = items.map((item) => `- ${item.name} ($${item.price})`).join("\n");
 
     switch (status) {
       case "confirmed":
@@ -61,19 +69,18 @@ If this was a mistake, please contact our support at support@necroticthreads.com
         throw new Error("Invalid status type");
     }
 
-    // Wysyłanie e-maila
-    await resend.send({
-      from: "orders@necroticthreads.com",  // Twój e-mail nadawcy
-      to: email,
-      subject,
-      text: message,
-    });
+    // Wywołanie funkcji wysyłania e-maila
+    const emailResponse = await sendEmail(email, subject, message);
 
-    return { success: true };
+    if (!emailResponse) {
+      console.error("❌ Error sending confirmation email");
+      return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
+    }
+
+    // Zwracamy odpowiedź
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error("Error sending email:", error);
-    throw new Error("Failed to send email");
+    console.error("❌ Unexpected Error:", error);
+    return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }
-
-export default sendEmail;
