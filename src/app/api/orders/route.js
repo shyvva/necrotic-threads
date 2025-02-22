@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
-import mongoose from "mongoose";
 import stripe from "@/lib/stripe"; // Importujemy Stripe
-import sendEmail from "@/api/sendemail"; // Poprawiony import do katalogu src/api/sendemail
+import sendEmail from "@/api/send-email.route"; // Poprawiony import do katalogu src/api/send-email/route
 
 export async function POST(req) {
   try {
