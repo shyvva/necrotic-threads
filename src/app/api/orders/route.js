@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import stripe from "@/lib/stripe"; // Importujemy Stripe
-import sendEmail from "@/lib/email";// Poprawiony import do katalogu src/api/send-email/route
+import sendEmail from "@/lib/email"; // Importujemy funkcję sendEmail z lib/email
 
 export async function POST(req) {
   try {
@@ -64,10 +64,20 @@ export async function POST(req) {
 
     // Wysyłamy e-mail potwierdzający zamówienie
     const emailPayload = {
-      email,
-      orderId: newOrder.insertedId.toString(),
-      status: "confirmed",
-      items: [{ name: product, price: `$${price}` }],
+      to: email,
+      subject: "Order Confirmation - Necrotic Threads",
+      message: `
+        Thank you for your order!
+
+        Order ID: ${newOrder.insertedId}
+
+        Items:
+        - ${product} ($${price})
+
+        We will notify you when your order is shipped.
+
+        ⚠️ This email is automated. Please do not reply.
+      `,
     };
 
     const emailResponse = await sendEmail(emailPayload); // Wywołujemy funkcję do wysyłania e-maila
