@@ -1,5 +1,25 @@
-import sendEmail from "@/lib/email";
+import Resend from 'resend';
 
+// Inicjalizacja Resend z kluczem API
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Funkcja wysyłająca e-mail
+export default async function sendEmail(to, subject, message) {
+  try {
+    const response = await resend.send({
+      from: 'orders@necroticthreads.com',  // Twój e-mail nadawcy
+      to: to,
+      subject: subject,
+      text: message,
+    });
+    return response;
+  } catch (error) {
+    console.error("Error sending email:", error);
+    throw new Error("Failed to send email");
+  }
+}
+
+// Twój istniejący kod do obsługi żądania POST
 export async function POST(req) {
   try {
     const { email, orderId, status, items } = await req.json();
@@ -15,7 +35,6 @@ export async function POST(req) {
     let message = "";
     const formattedItems = items.map((item) => `- ${item.name} ($${item.price})`).join("\n");
 
-    // Wybór szablonu wiadomości na podstawie statusu zamówienia
     switch (status) {
       case "confirmed":
         subject = "Your Order Confirmation - Necrotic Threads";
@@ -71,6 +90,7 @@ If this was a mistake, please contact our support at support@necroticthreads.com
         );
     }
 
+    // Wysyłanie e-maila
     await sendEmail(email, subject, message);
 
     return new Response(
