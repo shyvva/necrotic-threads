@@ -1,10 +1,9 @@
-import Resend from 'resend';
+import { Resend } from 'resend';
 
-// Inicjalizacja Resend z kluczem API
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Funkcja wysyłająca e-mail
-export default async function sendEmail(to, subject, message) {
+async function sendEmail(to, subject, message) {
   try {
     const response = await resend.send({
       from: 'orders@necroticthreads.com',  // Twój e-mail nadawcy
@@ -19,7 +18,7 @@ export default async function sendEmail(to, subject, message) {
   }
 }
 
-// Twój istniejący kod do obsługi żądania POST
+// Główna funkcja obsługująca żądanie API
 export async function POST(req) {
   try {
     const { email, orderId, status, items } = await req.json();
